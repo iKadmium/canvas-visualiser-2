@@ -1,18 +1,21 @@
 <script lang="ts">
 	import { Renderer2d, type RendererOptions } from '$lib/renderer';
-	import { onDestroy, onMount } from 'svelte';
+	import { afterUpdate, onDestroy, onMount } from 'svelte';
+	import { writable, type Writable } from 'svelte/store';
 
 	let canvas2d: HTMLCanvasElement;
 	let playHead: HTMLInputElement;
 
 	export let files: File[];
+	export let options: RendererOptions;
 	let audioFiles: File[] = [];
 	let imageFiles: File[] = [];
 	let loading = false;
-	let width = 1280;
-	let height = 720;
+	export let width: number;
+	export let height: number;
 	let frameRate = 60;
 	let currentFrame = 0;
+	let progress: Writable<number> | undefined;
 
 	let renderer: Renderer2d;
 	const audio = new Audio();
@@ -24,28 +27,29 @@
 
 	async function handleImageFileChange(event: Event & { currentTarget: EventTarget & HTMLSelectElement }) {
 		const index = parseInt(event.currentTarget.value);
-		await loadImage(imageFiles[index]);
+		loadImage(imageFiles[index]);
 	}
 
 	async function loadAudio(file: File) {
 		loading = true;
+		progress = writable(0);
 		try {
-			await renderer.loadAudio(file);
+			await renderer.loadAudio(file, progress);
 			const url = URL.createObjectURL(file);
 			audio.src = url;
-			await renderer.update();
 			renderer.draw();
 		} catch (reason) {
 			console.error(reason);
 		} finally {
 			loading = false;
+			progress = undefined;
 		}
 	}
 
-	async function loadImage(file: File) {
+	function loadImage(file: File) {
 		loading = true;
 		try {
-			await renderer.loadImage(file);
+			renderer.loadImage(file);
 		} catch (reason) {
 			console.error(reason);
 		} finally {
@@ -56,7 +60,6 @@
 	async function handleSeek(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
 		currentFrame = parseInt(event.currentTarget.value);
 		renderer.seek(currentFrame);
-		await renderer.update();
 		renderer.draw(false);
 		audio.currentTime = currentFrame / frameRate;
 	}
@@ -79,33 +82,27 @@
 	}
 
 	onMount(async () => {
-		const options: RendererOptions = {
-			artist: 'Kadmium',
-			title: "Don't Pay the Ferryman",
-			artistFillStyle: '#282a36',
-			titleFillStyle: '#282a36',
-			timeFillStyle: '#282a36',
-			playheadStrokeStyle: '#282a36',
-			playheadTrackStrokeStyle: '#282a36',
-			lowerThirdFillStyle: '#282a3600',
-			eqLineStyle: '#282a36',
-			eqGlowStyle: '#bd93f9'
-		};
 		renderer = new Renderer2d(frameRate, playHead, canvas2d, options);
 
 		if (audioFiles.length > 0) {
 			await loadAudio(audioFiles[0]);
 		}
 		if (imageFiles.length > 0) {
-			await loadImage(imageFiles[0]);
+			loadImage(imageFiles[0]);
 		}
-		await renderer.update();
 		renderer.draw(false);
 	});
 
 	onDestroy(() => {
 		renderer.stop();
 		audio.pause();
+	});
+
+	afterUpdate(() => {
+		renderer.options = options;
+		if (!loading) {
+			renderer.draw();
+		}
 	});
 
 	audioFiles = files.filter((file) => file.type.split('/')[0] === 'audio');
@@ -125,6 +122,9 @@
 	</select>
 	{#if loading}
 		<span>Loading...</span>
+		{#if progress}
+			<span>{($progress || 0) * 100}%</span>
+		{/if}
 	{/if}
 {:else}
 	<span>Error: at least one audio file (and optionally at least one image file) is required.</span>

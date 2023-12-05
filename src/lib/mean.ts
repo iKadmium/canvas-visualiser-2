@@ -1,9 +1,10 @@
-export function mean(arr: Uint8Array) {
-	const sum = arr.reduce((previous, current) => previous + current);
-	return sum / arr.length;
+export function mean(arr: Float32Array | number[]) {
+	let sum = 0;
+	arr.forEach((value) => (sum += value / arr.length));
+	return sum;
 }
 
-export function reduceBands(arr: Uint8Array, bands: number) {
+export function reduceBands(arr: Float32Array | number[], bands: number) {
 	const elementsPerBand = arr.length / bands;
 	const outputBands: number[] = [];
 	for (let i = 0; i < bands; i++) {
@@ -13,4 +14,9 @@ export function reduceBands(arr: Uint8Array, bands: number) {
 		outputBands.push(bandValue);
 	}
 	return outputBands;
+}
+
+export function reduceBandsOlympic(arr: Float32Array | number[], bands: number) {
+	const newBands = reduceBands(arr, bands + 4);
+	return newBands.slice(2, bands + 2);
 }

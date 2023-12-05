@@ -1,4 +1,6 @@
-const maxSpeed = 0.005;
+const maxSpeed = 0.002;
+const maxStrength = 0.9;
+const multiplier = 1;
 
 export class LineRenderer {
 	private x: number;
@@ -26,7 +28,8 @@ export class LineRenderer {
 				currentStrength = this.lastStrength - maxSpeed;
 			}
 		} else {
-			currentStrength = strength;
+			strength *= multiplier;
+			currentStrength = Math.min(strength, maxStrength);
 		}
 
 		const height = this.maxHeight * currentStrength;
