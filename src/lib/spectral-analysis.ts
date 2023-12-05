@@ -1,20 +1,38 @@
-import { FFTR } from 'kissfft-js';
 import {
-	hann,
-	hamming,
-	cosine,
-	lanczos,
-	gaussian,
-	tukey,
 	blackman,
-	exact_blackman,
-	kaiser,
-	nuttall,
 	blackman_harris,
 	blackman_nuttall,
+	cosine,
+	exact_blackman,
 	flat_top,
+	gaussian,
+	hamming,
+	hann,
+	kaiser,
+	lanczos,
+	nuttall,
+	tukey,
 	type WindowFunctionName
 } from 'fft-windowing-ts';
+import { FFTR } from 'kissfft-js';
+import { sum } from 'mathjs';
+
+export interface SpectralAnalysisMessage {
+	channelData: Float32Array;
+	sampleRate: number;
+	frameRate: number;
+	length: number;
+}
+
+export interface SpectralResultMessage {
+	type: 'result';
+	result: number[][];
+}
+
+export interface SpectralProgressMessage {
+	type: 'progress';
+	progress: number;
+}
 
 const findWindowFunction = (name: WindowFunctionName) => {
 	switch (name) {
@@ -153,7 +171,13 @@ const roundOverlapAndWindowSize = (windowSize: number, overlap: number): [number
  *
  * @return  {[number[], number[]]}  [Frequencies, PSDs]
  */
-const spectrogram = (inputData: number[], sampleRate: number, windowSize: number, overlap = 0.5, windowingFunction: WindowFunctionName = 'hann') => {
+const spectrogram = (
+	inputData: number[],
+	sampleRate: number,
+	windowSize: number,
+	overlap = 0.5,
+	windowingFunction: WindowFunctionName = 'hann'
+): [number[], number[][]] => {
 	[overlap, windowSize] = roundOverlapAndWindowSize(windowSize, overlap);
 	const psdWindows = calculatePSDWindows(inputData, sampleRate, windowSize, overlap, windowingFunction);
 	const psdWindowTranspose = psdWindows[0].map((x, i) => psdWindows.map((x) => x[i]));
@@ -161,4 +185,60 @@ const spectrogram = (inputData: number[], sampleRate: number, windowSize: number
 	return [fftfreq, psdWindowTranspose];
 };
 
-export { calculateFFT, welch, spectrogram };
+addEventListener('message', (event: MessageEvent<SpectralAnalysisMessage>) => {
+	console.log('received message');
+	const { channelData: rawChannelData, sampleRate, frameRate, length } = event.data;
+	const frameFft: number[][] = [];
+	const samplesPerFrame = sampleRate / frameRate;
+	const totalFrames = Math.ceil(length / samplesPerFrame);
+
+	const windowSize = 2048;
+	const channelData: number[] = [...rawChannelData];
+	channelData.push(...new Array(windowSize).fill(0));
+
+	// get the per-frame FFT data
+	for (let frame = 0; frame < totalFrames; frame++) {
+		const start = Math.floor(samplesPerFrame * frame);
+		const end = start + windowSize;
+		const frameSamples = channelData.slice(start, end);
+		const currentFrameFft = calculateFFT(frameSamples, sampleRate, windowSize, 0.99);
+		frameFft[frame] = getEqBands(currentFrameFft[1]);
+		const progressMessage: SpectralProgressMessage = {
+			type: 'progress',
+			progress: frame / totalFrames
+		};
+		postMessage(progressMessage);
+	}
+
+	// normalise the buckets
+	for (let bucket = 0; bucket < frameFft[0].length; bucket++) {
+		const bucketValues = frameFft.flatMap((x) => x);
+		const fftMax = bucketValues.reduce((previous, current) => (current > previous ? current : previous));
+		for (let frame = 0; frame < totalFrames; frame++) {
+			frameFft[frame][bucket] = frameFft[frame][bucket] / fftMax;
+		}
+	}
+
+	const resultMessage: SpectralResultMessage = {
+		type: 'result',
+		result: frameFft
+	};
+	postMessage(resultMessage);
+});
+
+function getEqBands(fft: number[]): number[] {
+	const bandsData: number[] = [];
+	const bandCount = Math.ceil(Math.log2(fft.length));
+	for (let i = 0; i < bandCount; i++) {
+		let start = 2 ** i;
+		if (i === 0) {
+			start = 0;
+		}
+		const end = 2 ** (i + 1) - 1;
+		const bandData = fft.slice(start, end);
+		bandsData.push(sum(bandData));
+	}
+	return bandsData;
+}
+
+export { calculateFFT, spectrogram, welch };
