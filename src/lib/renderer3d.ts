@@ -18,6 +18,8 @@ interface ProgramInfo {
 		baseColor: WebGLUniformLocation | null;
 		glowIntensity: WebGLUniformLocation | null;
 		segmentWidth: WebGLUniformLocation | null;
+		lineHeightMultiplier: WebGLUniformLocation | null;
+		lineColor: WebGLUniformLocation | null;
 	};
 }
 
@@ -57,7 +59,9 @@ export class Renderer3d {
 				fft: gl.getUniformLocation(shaderProgram, 'uFft'),
 				baseColor: gl.getUniformLocation(shaderProgram, 'uBaseColor'),
 				glowIntensity: gl.getUniformLocation(shaderProgram, 'uGlowIntensity'),
-				segmentWidth: gl.getUniformLocation(shaderProgram, 'uSegmentWidth')
+				segmentWidth: gl.getUniformLocation(shaderProgram, 'uSegmentWidth'),
+				lineHeightMultiplier: gl.getUniformLocation(shaderProgram, 'uLineHeightMultiplier'),
+				lineColor: gl.getUniformLocation(shaderProgram, 'uLineColor')
 			}
 		};
 		this.buffers = initBuffers(gl);
@@ -65,7 +69,7 @@ export class Renderer3d {
 
 	public draw(fft: number[]) {
 		const gl = this.renderContext;
-		gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
+		gl.clearColor(0.0, 0.0, 0.0, 0.0); // Clear to black, fully opaque
 		gl.clearDepth(1.0); // Clear everything
 		gl.enable(gl.DEPTH_TEST); // Enable depth testing
 		gl.depthFunc(gl.LEQUAL); // Near things obscure far things
@@ -112,7 +116,8 @@ export class Renderer3d {
 		// Tell WebGL to use our program when drawing
 		gl.useProgram(this.programInfo.program);
 
-		const rgb = this.hexStringToFloats(this.options.eqGlowStyle);
+		const glowColor = this.hexStringToFloats(this.options.eqGlowStyle);
+		const lineColor = this.hexStringToFloats(this.options.eqLineStyle);
 		const glowIntensity = this.options.eqGlowIntensity;
 		const segmentWidth = this.options.eqSegmentWidth;
 
@@ -121,9 +126,11 @@ export class Renderer3d {
 		gl.uniformMatrix4fv(this.programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
 		gl.uniform3f(this.programInfo.uniformLocations.resolution, this.canvas.width, this.canvas.height, 1);
 		gl.uniform1fv(this.programInfo.uniformLocations.fft, fft, 0, fft.length);
-		gl.uniform3fv(this.programInfo.uniformLocations.baseColor, rgb, 0, rgb.length);
+		gl.uniform3fv(this.programInfo.uniformLocations.baseColor, glowColor, 0, glowColor.length);
+		gl.uniform3fv(this.programInfo.uniformLocations.lineColor, lineColor, 0, lineColor.length);
 		gl.uniform1f(this.programInfo.uniformLocations.glowIntensity, glowIntensity);
 		gl.uniform1f(this.programInfo.uniformLocations.segmentWidth, segmentWidth);
+		gl.uniform1f(this.programInfo.uniformLocations.lineHeightMultiplier, this.options.eqLineHeightMultiplier);
 
 		{
 			const offset = 0;

@@ -12,7 +12,8 @@ export interface RendererOptions {
 	videoBitrate: number;
 
 	eqBandCount: number;
-	eqLineStyle: string | CanvasGradient | CanvasPattern;
+	eqLineHeightMultiplier: number;
+	eqLineStyle: string;
 	eqSegmentWidth: number;
 	eqGlowIntensity: number;
 	eqGlowStyle: string;

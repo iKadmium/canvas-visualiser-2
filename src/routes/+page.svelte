@@ -19,6 +19,7 @@
 		playheadLineWidth: 2,
 		lowerThirdFillStyle: '#282a36',
 		lowerThirdOpacity: 0,
+		eqLineHeightMultiplier: 0.25,
 		eqLineStyle: '#282a36',
 		eqGlowStyle: '#bd93f9',
 		font: 'normal 300 32px Roboto',

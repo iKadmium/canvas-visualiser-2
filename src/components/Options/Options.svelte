@@ -36,6 +36,7 @@
 		<div class="options">
 			<label for="eqBandCount">EQ Band Count</label><input type="number" bind:value={options.eqBandCount} min="1" max="32" id="eqBandCount" />
 			<label for="eqLineWidth">EQ Line Width</label><input type="number" bind:value={options.eqSegmentWidth} min="1" max="64" id="eqLineWidth" />
+			<label for="eqLineColor">EQ Line Color</label><input type="color" bind:value={options.eqLineStyle} min="1" max="64" id="eqLineColor" />
 			<label for="eqGlowIntensity">EQ Glow Intensity</label><input
 				type="number"
 				bind:value={options.eqGlowIntensity}
@@ -44,7 +45,13 @@
 				step="0.001"
 				id="eqGlowIntensity"
 			/>
-			<label for="eqLineStyle">EQ Line Style</label><input type="color" bind:value={options.eqLineStyle} id="eqLineStyle" />
+			<label for="eqLineHeight">EQ Line Height Multiplier</label><input
+				type="number"
+				bind:value={options.eqLineHeightMultiplier}
+				min="0"
+				step="0.1"
+				id="eqLineHeight"
+			/>
 			<label for="eqGlowStyle">EQ Glow Style</label><input type="color" bind:value={options.eqGlowStyle} id="eqGlowStyle" />
 			<label for="lowerThirdFillStyle">Lower Third Fill Style</label><input type="color" bind:value={options.lowerThirdFillStyle} id="lowerThirdFillStyle" />
 			<label for="lowerThirdOpacity">Lower Third Opacity</label>
@@ -54,7 +61,6 @@
 			<input type="number" bind:value={options.playheadLineWidth} min="1" max="32" id="playheadLineWidth" />
 			<label for="textFillStyle">Text Fill Style</label><input type="color" bind:value={options.textFillStyle} id="textFillStyle" />
 			<label for="font">Font</label><input type="text" bind:value={options.font} id="font" />
-			<label for="imageSmoothing">Image Smoothing Enabled</label><input type="checkbox" bind:checked={options.imageSmoothing} />
 		</div>
 	</Tab>
 	<Tab id="rendering">
@@ -83,10 +89,6 @@
 		padding: 0.25rem 0.5rem;
 
 		color: unset;
-	}
-
-	input[type='checkbox'] {
-		max-width: 1rem;
 	}
 
 	input[type='color'] {
