@@ -11,7 +11,7 @@ export interface RendererOptions {
 	audioBitrate: number;
 	videoBitrate: number;
 
-	eqBandCount: number;
+	smoothingFrames: number;
 	eqLineHeightMultiplier: number;
 	eqLineStyle: string;
 	eqSegmentWidth: number;
@@ -66,7 +66,7 @@ export class SceneGraph {
 	}
 
 	public async draw() {
-		const fft = this.audioPlayer.getFft(this.currentFrame);
+		const fft = this.audioPlayer.getSmoothedFft(this.currentFrame, this.options.smoothingFrames);
 		this.renderer3d.draw(fft);
 		this.renderer2d.draw(fft, this.currentFrame, this.totalFrames, this.canvas3d);
 	}

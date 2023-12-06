@@ -34,7 +34,7 @@
 	</Tab>
 	<Tab id="style">
 		<div class="options">
-			<label for="eqBandCount">EQ Band Count</label><input type="number" bind:value={options.eqBandCount} min="1" max="32" id="eqBandCount" />
+			<label for="smoothingFrames">Smoothing Frames</label><input type="number" bind:value={options.smoothingFrames} min="1" max="60" id="smoothingFrames" />
 			<label for="eqLineWidth">EQ Line Width</label><input type="number" bind:value={options.eqSegmentWidth} min="1" max="64" id="eqLineWidth" />
 			<label for="eqLineColor">EQ Line Color</label><input type="color" bind:value={options.eqLineStyle} min="1" max="64" id="eqLineColor" />
 			<label for="eqGlowIntensity">EQ Glow Intensity</label><input

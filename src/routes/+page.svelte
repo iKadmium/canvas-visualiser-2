@@ -11,7 +11,7 @@
 		audioBitrate: 256,
 		videoBitrate: 20,
 
-		eqBandCount: 8,
+		smoothingFrames: 10,
 		eqSegmentWidth: 0.04,
 		eqGlowIntensity: 0.01,
 		textFillStyle: '#f8f8f2',
@@ -19,7 +19,7 @@
 		playheadLineWidth: 2,
 		lowerThirdFillStyle: '#282a36',
 		lowerThirdOpacity: 0,
-		eqLineHeightMultiplier: 0.25,
+		eqLineHeightMultiplier: 1,
 		eqLineStyle: '#282a36',
 		eqGlowStyle: '#bd93f9',
 		font: 'normal 300 32px Roboto',

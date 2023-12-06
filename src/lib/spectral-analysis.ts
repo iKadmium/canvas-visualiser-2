@@ -191,7 +191,7 @@ addEventListener('message', (event: MessageEvent<SpectralAnalysisMessage>) => {
 	const samplesPerFrame = sampleRate / frameRate;
 	const totalFrames = Math.ceil(length / samplesPerFrame);
 
-	const windowSize = 2 ** 12;
+	const windowSize = 2 ** 11;
 	const channelData: number[] = [...rawChannelData];
 	channelData.push(...new Array(windowSize).fill(0));
 
@@ -200,7 +200,7 @@ addEventListener('message', (event: MessageEvent<SpectralAnalysisMessage>) => {
 		const start = Math.floor(samplesPerFrame * frame);
 		const end = start + windowSize;
 		const frameSamples = channelData.slice(start, end);
-		const currentFrameFft = calculateFFT(frameSamples, sampleRate, windowSize, 0.99, 'blackman_harris');
+		const currentFrameFft = calculateFFT(frameSamples, sampleRate, windowSize, undefined, 'blackman_harris');
 		frameFft[frame] = getEqBands(currentFrameFft[1]);
 		const progressMessage: SpectralProgressMessage = {
 			type: 'progress',

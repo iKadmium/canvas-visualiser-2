@@ -1,6 +1,7 @@
 import type { Writable } from 'svelte/store';
 import type { SpectralAnalysisMessage, SpectralProgressMessage, SpectralResultMessage } from './spectral-analysis';
 import SpectralAnalysis from './spectral-analysis?worker';
+import { mean } from './mean';
 
 export class AudioPlayer {
 	private offlineCtx: OfflineAudioContext | undefined;
@@ -25,6 +26,25 @@ export class AudioPlayer {
 		this.audioBuffer = await this.offlineCtx.decodeAudioData(this.rawBuffer);
 		this.length = this.audioBuffer.duration;
 		this.frameFft = await this.cacheFft(frameRate, progress);
+	}
+
+	public getSmoothedFft(frame: number, smoothingFrames: number): number[] {
+		if (!this.audioBuffer) {
+			return new Array(10).fill(0);
+			//throw new Error('Audio Buffer not initialised');
+		}
+		if (!this.frameFft) {
+			throw new Error('Samples have not been loaded');
+		}
+		const smoothed: number[] = [];
+		for (let i = 0; i < this.frameFft[frame].length; i++) {
+			const values: number[] = [];
+			for (let j = frame; j < smoothingFrames + frame && j < this.frameFft.length; j++) {
+				values.push(this.frameFft[j][i]);
+			}
+			smoothed.push(mean(values));
+		}
+		return smoothed;
 	}
 
 	public getFft(frame: number) {
