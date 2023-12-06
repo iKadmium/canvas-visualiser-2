@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Renderer2d, type RendererOptions } from '$lib/renderer';
+	import { SceneGraph, type RendererOptions } from '$lib/sceneGraph';
 	import { afterUpdate, onDestroy, onMount } from 'svelte';
 	import { writable, type Writable } from 'svelte/store';
 
 	let canvas2d: HTMLCanvasElement;
+	let canvas3d: HTMLCanvasElement;
 	let playHead: HTMLInputElement;
 
 	export let files: File[];
@@ -17,7 +18,7 @@
 	let currentFrame = 0;
 	let progress: Writable<number> | undefined;
 
-	let renderer: Renderer2d;
+	let renderer: SceneGraph;
 	const audio = new Audio();
 
 	async function handleAudioFileChange(event: Event & { currentTarget: EventTarget & HTMLSelectElement }) {
@@ -60,7 +61,7 @@
 	async function handleSeek(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
 		currentFrame = parseInt(event.currentTarget.value);
 		renderer.seek(currentFrame);
-		renderer.draw(false);
+		renderer.draw();
 		audio.currentTime = currentFrame / frameRate;
 	}
 
@@ -81,8 +82,15 @@
 		await renderer.export();
 	}
 
+	function formatProgress(prog: number) {
+		const intl = Intl.NumberFormat(navigator.language, {
+			maximumFractionDigits: 0
+		});
+		return intl.format(prog);
+	}
+
 	onMount(async () => {
-		renderer = new Renderer2d(frameRate, playHead, canvas2d, options);
+		renderer = new SceneGraph(frameRate, playHead, canvas2d, canvas3d, options);
 
 		if (audioFiles.length > 0) {
 			await loadAudio(audioFiles[0]);
@@ -90,7 +98,7 @@
 		if (imageFiles.length > 0) {
 			loadImage(imageFiles[0]);
 		}
-		renderer.draw(false);
+		renderer.draw();
 	});
 
 	onDestroy(() => {
@@ -123,7 +131,7 @@
 	{#if loading}
 		<span>Loading...</span>
 		{#if progress}
-			<span>{($progress || 0) * 100}%</span>
+			<span>{formatProgress(($progress || 0) * 100)}%</span>
 		{/if}
 	{/if}
 {:else}
@@ -132,6 +140,8 @@
 
 <br />
 <canvas bind:this={canvas2d} {width} {height} />
+<br />
+<canvas bind:this={canvas3d} {width} {height} style="display: none;" />
 
 <input type="range" style={`width: ${width}px`} on:input={handleSeek} on:change={handleSeek} bind:this={playHead} />
 <br />

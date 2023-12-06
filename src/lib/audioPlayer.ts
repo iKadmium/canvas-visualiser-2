@@ -29,7 +29,8 @@ export class AudioPlayer {
 
 	public getFft(frame: number) {
 		if (!this.audioBuffer) {
-			throw new Error('Audio Buffer not initialised');
+			return new Array(10).fill(0);
+			//throw new Error('Audio Buffer not initialised');
 		}
 		if (!this.frameFft) {
 			throw new Error('Samples have not been loaded');

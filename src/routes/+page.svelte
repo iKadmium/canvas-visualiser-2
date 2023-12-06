@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { RendererOptions } from '$lib/renderer';
+	import type { RendererOptions } from '$lib/sceneGraph';
 	import FileSelector from '../components/FileSelector/FileSelector.svelte';
 	import Options from '../components/Options/Options.svelte';
 	import Preview from '../components/Preview/Preview.svelte';
@@ -12,8 +12,8 @@
 		videoBitrate: 20,
 
 		eqBandCount: 8,
-		eqLineWidth: 16,
-		eqGlowWidth: 64,
+		eqSegmentWidth: 0.04,
+		eqGlowIntensity: 0.01,
 		textFillStyle: '#f8f8f2',
 		playheadStrokeStyle: '#f8f8f2',
 		playheadLineWidth: 2,

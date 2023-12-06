@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { RendererOptions } from '$lib/renderer';
+	import type { RendererOptions } from '$lib/sceneGraph';
 	import Tab from '../Tab/Tab.svelte';
 	import TabStrip, { type TabConfig } from '../TabStrip/TabStrip.svelte';
 
@@ -35,8 +35,15 @@
 	<Tab id="style">
 		<div class="options">
 			<label for="eqBandCount">EQ Band Count</label><input type="number" bind:value={options.eqBandCount} min="1" max="32" id="eqBandCount" />
-			<label for="eqLineWidth">EQ Line Width</label><input type="number" bind:value={options.eqLineWidth} min="1" max="64" id="eqLineWidth" />
-			<label for="eqGlowWidth">EQ Glow Width</label><input type="number" bind:value={options.eqGlowWidth} min="1" max="128" id="eqGlowWidth" />
+			<label for="eqLineWidth">EQ Line Width</label><input type="number" bind:value={options.eqSegmentWidth} min="1" max="64" id="eqLineWidth" />
+			<label for="eqGlowIntensity">EQ Glow Intensity</label><input
+				type="number"
+				bind:value={options.eqGlowIntensity}
+				min="0"
+				max="1"
+				step="0.001"
+				id="eqGlowIntensity"
+			/>
 			<label for="eqLineStyle">EQ Line Style</label><input type="color" bind:value={options.eqLineStyle} id="eqLineStyle" />
 			<label for="eqGlowStyle">EQ Glow Style</label><input type="color" bind:value={options.eqGlowStyle} id="eqGlowStyle" />
 			<label for="lowerThirdFillStyle">Lower Third Fill Style</label><input type="color" bind:value={options.lowerThirdFillStyle} id="lowerThirdFillStyle" />

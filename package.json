@@ -40,6 +40,7 @@
 		"date-fns": "^2.30.0",
 		"fft-windowing-ts": "^0.2.7",
 		"fft.js": "^4.0.4",
+		"gl-matrix": "^3.4.3",
 		"jszip": "^3.10.1",
 		"kissfft-js": "^0.1.8",
 		"mathjs": "^12.1.0",

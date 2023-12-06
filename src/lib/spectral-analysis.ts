@@ -186,7 +186,6 @@ const spectrogram = (
 };
 
 addEventListener('message', (event: MessageEvent<SpectralAnalysisMessage>) => {
-	console.log('received message');
 	const { channelData: rawChannelData, sampleRate, frameRate, length } = event.data;
 	const frameFft: number[][] = [];
 	const samplesPerFrame = sampleRate / frameRate;
