@@ -19,15 +19,12 @@
 	let progress: Writable<number> | undefined;
 
 	let renderer: SceneGraph;
-	const audio = new Audio();
 
 	async function loadAudio(file: File) {
 		loading = true;
 		progress = writable(0);
 		try {
 			await renderer.loadAudio(file, progress);
-			const url = URL.createObjectURL(file);
-			audio.src = url;
 			renderer.draw();
 		} catch (reason) {
 			console.error(reason);
@@ -52,16 +49,13 @@
 		currentFrame = parseInt(event.currentTarget.value);
 		renderer.seek(currentFrame);
 		renderer.draw();
-		audio.currentTime = currentFrame / frameRate;
 	}
 
 	async function handlePlayPause() {
 		if (renderer.isPlaying()) {
 			renderer.stop();
-			audio.pause();
 		} else {
 			renderer.play();
-			await audio.play();
 		}
 	}
 
@@ -81,6 +75,7 @@
 
 	onMount(async () => {
 		renderer = new SceneGraph(frameRate, playHead, canvas2d, canvas3d, options);
+		await renderer.init();
 		unsubscribers.push(
 			audioFile.subscribe(async (audio) => {
 				if (audio) {
@@ -101,14 +96,14 @@
 			unsubscriber();
 		}
 		renderer.stop();
-		audio.pause();
 	});
 
 	afterUpdate(() => {
-		renderer.options = options;
-		if (!loading) {
-			renderer.draw();
-		}
+		renderer.setOptions(options);
+		// if (!loading && $audioFile && $imageFile) {
+		// 	renderer.draw();
+		// }
+		renderer.draw();
 	});
 </script>
 
@@ -122,12 +117,13 @@
 <br />
 <canvas bind:this={canvas2d} {width} {height} />
 <br />
-<canvas bind:this={canvas3d} {width} {height} style="display: none;" />
-
 <input type="range" style={`width: ${width}px`} on:input={handleSeek} on:change={handleSeek} bind:this={playHead} />
 <br />
 <button on:click={handlePlayPause}>Play</button>
 <button on:click={handleRender}>Render</button>
+
+<br />
+<canvas bind:this={canvas3d} {width} {height} style="visibility: hidden;" />
 
 <style>
 	canvas {

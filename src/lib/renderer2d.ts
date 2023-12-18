@@ -41,6 +41,23 @@ export class Renderer2d {
 		this.drawPlayhead(edgePadding, timeTextRect, currentFrame / totalFrames);
 		const titleTextRect = this.drawTitleText(elementGap, timeTextRect);
 		this.drawArtistText(elementGap, titleTextRect);
+		this.drawGrid();
+	}
+
+	private drawGrid() {
+		const horizontalSections = 4;
+		for (let i = 1; i < horizontalSections; i++) {
+			this.renderContex2d.moveTo(0, (this.canvas.height * i) / horizontalSections);
+			this.renderContex2d.lineTo(this.canvas.width, (this.canvas.height * i) / horizontalSections);
+			this.renderContex2d.stroke();
+		}
+
+		const verticalSections = 4;
+		for (let i = 1; i < verticalSections; i++) {
+			this.renderContex2d.moveTo((this.canvas.width * i) / verticalSections, 0);
+			this.renderContex2d.lineTo((this.canvas.width * i) / horizontalSections, this.canvas.height);
+			this.renderContex2d.stroke();
+		}
 	}
 
 	public setBackgroundImage(image: HTMLImageElement | undefined) {

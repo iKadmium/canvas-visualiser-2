@@ -9,11 +9,13 @@ export class AudioPlayer {
 	private rawBuffer: ArrayBuffer | undefined;
 	private frameFft: number[][] | undefined;
 	private spectral: Worker;
+	private audio: HTMLAudioElement;
 	public length: number;
 
 	constructor() {
 		this.length = 0;
 		this.spectral = new SpectralAnalysis();
+		this.audio = new Audio();
 	}
 
 	public async load(file: File, frameRate: number, progress: Writable<number>) {
@@ -26,6 +28,8 @@ export class AudioPlayer {
 		this.audioBuffer = await this.offlineCtx.decodeAudioData(this.rawBuffer);
 		this.length = this.audioBuffer.duration;
 		this.frameFft = await this.cacheFft(frameRate, progress);
+		const url = URL.createObjectURL(file);
+		this.audio.src = url;
 	}
 
 	public getSmoothedFft(frame: number, smoothingFrames: number): number[] {
@@ -81,6 +85,22 @@ export class AudioPlayer {
 		const bufferSource = this.offlineCtx.createBufferSource();
 		bufferSource.buffer = this.audioBuffer;
 		return bufferSource;
+	}
+
+	public async play() {
+		await this.audio.play();
+	}
+
+	public stop() {
+		this.audio.pause();
+	}
+
+	public getAudioTime() {
+		return this.audio.currentTime;
+	}
+
+	public seek(time: number) {
+		this.audio.currentTime = time;
 	}
 
 	private cacheFft(frameRate: number, progress: Writable<number>) {

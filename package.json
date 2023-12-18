@@ -38,6 +38,7 @@
 		"@fontsource/roboto": "^5.0.8",
 		"@types/dom-mediacapture-transform": "^0.1.9",
 		"@types/kissfft-js": "^0.1.3",
+		"@webgpu/types": "^0.1.40",
 		"date-fns": "^2.30.0",
 		"fft-windowing-ts": "^0.2.7",
 		"fft.js": "^4.0.4",
