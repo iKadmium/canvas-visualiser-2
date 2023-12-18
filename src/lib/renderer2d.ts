@@ -6,6 +6,7 @@ export class Renderer2d {
 	private renderContex2d: CanvasRenderingContext2D;
 	private canvas: HTMLCanvasElement;
 	private backgroundImage?: HTMLImageElement;
+	private backgroundImageCache?: ImageData;
 	private frameRate: number;
 	public options: RendererOptions;
 
@@ -21,12 +22,12 @@ export class Renderer2d {
 		this.frameRate = frameRate;
 	}
 
-	public draw(fft: number[], currentFrame: number, totalFrames: number, otherCanvas: HTMLCanvasElement) {
+	public draw(currentFrame: number, totalFrames: number, otherCanvas: HTMLCanvasElement) {
 		const edgePadding = 32;
 		this.renderContex2d.imageSmoothingEnabled = this.options.imageSmoothing;
 		this.renderContex2d.imageSmoothingQuality = 'high';
 		this.renderContex2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		this.drawBackground(32);
+		this.drawBackground();
 
 		this.renderContex2d.drawImage(otherCanvas, 0, 0);
 		this.drawForeground(edgePadding);
@@ -44,6 +45,11 @@ export class Renderer2d {
 
 	public setBackgroundImage(image: HTMLImageElement | undefined) {
 		this.backgroundImage = image;
+		if (image) {
+			this.backgroundImageCache = this.createBackgroundImageCache(image, 32);
+		} else {
+			this.backgroundImageCache = undefined;
+		}
 	}
 
 	private drawForeground(padding: number) {
@@ -59,16 +65,23 @@ export class Renderer2d {
 		}
 	}
 
-	private drawBackground(blurRadius: number) {
-		if (this.backgroundImage) {
-			this.renderContex2d.filter = `blur(${blurRadius}px)`;
-			const targetRect = coverRect(
-				{ x: 0, y: 0, w: this.backgroundImage.width, h: this.backgroundImage.height },
-				{ x: 0, y: 0, w: this.canvas.width, h: this.canvas.height }
-			);
-			this.renderContex2d.drawImage(this.backgroundImage, targetRect.x, targetRect.y, targetRect.w, targetRect.h);
-			this.renderContex2d.filter = 'blur(0px)';
+	private drawBackground() {
+		if (this.backgroundImageCache) {
+			this.renderContex2d.putImageData(this.backgroundImageCache, 0, 0);
 		}
+	}
+
+	private createBackgroundImageCache(image: HTMLImageElement, blurRadius: number) {
+		this.renderContex2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.renderContex2d.filter = `blur(${blurRadius}px)`;
+
+		const targetRect = coverRect({ x: 0, y: 0, w: image.width, h: image.height }, { x: 0, y: 0, w: this.canvas.width, h: this.canvas.height });
+		this.renderContex2d.drawImage(image, targetRect.x, targetRect.y, targetRect.w, targetRect.h);
+		this.renderContex2d.filter = 'blur(0px)';
+
+		const imageData = this.renderContex2d.getImageData(0, 0, this.canvas.width, this.canvas.height);
+		this.renderContex2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		return imageData;
 	}
 
 	private addOpacity(color: string | CanvasPattern | CanvasGradient, opacity: number) {

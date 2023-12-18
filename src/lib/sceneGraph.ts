@@ -1,9 +1,9 @@
 import type { Writable } from 'svelte/store';
 import { FileSystemWritableFileStreamTarget, Muxer } from 'webm-muxer';
 import { AudioPlayer } from './audioPlayer';
-import { sleep } from './sleep';
 import { Renderer2d } from './renderer2d';
 import { Renderer3d } from './renderer3d';
+import { sleep } from './sleep';
 
 export interface RendererOptions {
 	artist: string;
@@ -56,13 +56,19 @@ export class SceneGraph {
 	}
 
 	public loadImage(file: File | undefined) {
-		if (file) {
-			const image = new Image();
-			image.src = window.URL.createObjectURL(file);
-			this.renderer2d.setBackgroundImage(image);
-		} else {
-			this.renderer2d.setBackgroundImage(undefined);
-		}
+		return new Promise<void>((resolve) => {
+			if (file) {
+				const image = new Image();
+				image.src = window.URL.createObjectURL(file);
+				image.addEventListener('load', () => {
+					this.renderer2d.setBackgroundImage(image);
+					resolve();
+				});
+			} else {
+				this.renderer2d.setBackgroundImage(undefined);
+				resolve();
+			}
+		});
 	}
 
 	public async export() {
@@ -72,7 +78,7 @@ export class SceneGraph {
 	public async draw() {
 		const fft = this.audioPlayer.getSmoothedFft(this.currentFrame, this.options.smoothingFrames);
 		this.renderer3d.draw(fft);
-		this.renderer2d.draw(fft, this.currentFrame, this.totalFrames, this.canvas3d);
+		this.renderer2d.draw(this.currentFrame, this.totalFrames, this.canvas3d);
 	}
 
 	private async exportToEncoder() {

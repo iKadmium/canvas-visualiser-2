@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { SceneGraph, type RendererOptions } from '$lib/sceneGraph';
 	import { afterUpdate, onDestroy, onMount } from 'svelte';
-	import { writable, type Writable } from 'svelte/store';
+	import { writable, type Unsubscriber, type Writable } from 'svelte/store';
 
 	let canvas2d: HTMLCanvasElement;
 	let canvas3d: HTMLCanvasElement;
 	let playHead: HTMLInputElement;
+	const unsubscribers: Unsubscriber[] = [];
 
 	export let options: RendererOptions;
 	export let audioFile: Writable<File | undefined>;
@@ -36,10 +37,10 @@
 		}
 	}
 
-	function loadImage(file: File | undefined) {
+	async function loadImage(file: File | undefined) {
 		loading = true;
 		try {
-			renderer.loadImage(file);
+			await renderer.loadImage(file);
 		} catch (reason) {
 			console.error(reason);
 		} finally {
@@ -80,18 +81,25 @@
 
 	onMount(async () => {
 		renderer = new SceneGraph(frameRate, playHead, canvas2d, canvas3d, options);
-		audioFile.subscribe(async (audio) => {
-			if (audio) {
-				await loadAudio(audio);
-			}
-		});
-		imageFile.subscribe((image) => {
-			loadImage(image);
-		});
+		unsubscribers.push(
+			audioFile.subscribe(async (audio) => {
+				if (audio) {
+					await loadAudio(audio);
+				}
+			})
+		);
+		unsubscribers.push(
+			imageFile.subscribe((image) => {
+				loadImage(image);
+			})
+		);
 		renderer.draw();
 	});
 
 	onDestroy(() => {
+		for (const unsubscriber of unsubscribers) {
+			unsubscriber();
+		}
 		renderer.stop();
 		audio.pause();
 	});
