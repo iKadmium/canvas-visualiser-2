@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '@fontsource/roboto/100.css';
 	import '@fontsource/roboto/300.css';
+	import '@fontsource/josefin-sans/300.css';
 	import MainContainer from '../components/MainContainer/MainContainer.svelte';
 </script>
 

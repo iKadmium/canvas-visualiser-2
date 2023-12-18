@@ -1,10 +1,12 @@
 <script lang="ts">
 	import type { RendererOptions } from '$lib/sceneGraph';
+	import { writable } from 'svelte/store';
 	import FileSelector from '../components/FileSelector/FileSelector.svelte';
 	import Options from '../components/Options/Options.svelte';
 	import Preview from '../components/Preview/Preview.svelte';
 
-	let files: File[] = [];
+	const audioFile = writable<File | undefined>();
+	const imageFile = writable<File | undefined>();
 	let options: RendererOptions = {
 		artist: 'Kadmium',
 		title: "Don't Pay the Ferryman",
@@ -32,9 +34,20 @@
 
 <h1>Visualiser generator</h1>
 
-<FileSelector on:fileSelected={(event) => (files = event.detail)} />
+<div class="file-selectors">
+	<FileSelector title="Audio Files" on:fileSelected={(event) => audioFile.set(event.detail)} />
+	<FileSelector title="Background" on:fileSelected={(event) => imageFile.set(event.detail)} />
+</div>
 <Options bind:options bind:width bind:height />
 
-{#if files.length > 0}
-	<Preview {files} {options} {width} {height} />
+{#if audioFile}
+	<Preview {audioFile} {imageFile} {options} {width} {height} />
 {/if}
+
+<style>
+	.file-selectors {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1rem;
+	}
+</style>

@@ -42,7 +42,7 @@ export class Renderer2d {
 		this.drawArtistText(elementGap, titleTextRect);
 	}
 
-	public setBackgroundImage(image: HTMLImageElement) {
+	public setBackgroundImage(image: HTMLImageElement | undefined) {
 		this.backgroundImage = image;
 	}
 

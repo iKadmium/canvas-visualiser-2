@@ -7,10 +7,9 @@
 	let canvas3d: HTMLCanvasElement;
 	let playHead: HTMLInputElement;
 
-	export let files: File[];
 	export let options: RendererOptions;
-	let audioFiles: File[] = [];
-	let imageFiles: File[] = [];
+	export let audioFile: Writable<File | undefined>;
+	export let imageFile: Writable<File | undefined>;
 	let loading = false;
 	export let width: number;
 	export let height: number;
@@ -20,16 +19,6 @@
 
 	let renderer: SceneGraph;
 	const audio = new Audio();
-
-	async function handleAudioFileChange(event: Event & { currentTarget: EventTarget & HTMLSelectElement }) {
-		const index = parseInt(event.currentTarget.value);
-		await loadAudio(audioFiles[index]);
-	}
-
-	async function handleImageFileChange(event: Event & { currentTarget: EventTarget & HTMLSelectElement }) {
-		const index = parseInt(event.currentTarget.value);
-		loadImage(imageFiles[index]);
-	}
 
 	async function loadAudio(file: File) {
 		loading = true;
@@ -47,7 +36,7 @@
 		}
 	}
 
-	function loadImage(file: File) {
+	function loadImage(file: File | undefined) {
 		loading = true;
 		try {
 			renderer.loadImage(file);
@@ -91,13 +80,14 @@
 
 	onMount(async () => {
 		renderer = new SceneGraph(frameRate, playHead, canvas2d, canvas3d, options);
-
-		if (audioFiles.length > 0) {
-			await loadAudio(audioFiles[0]);
-		}
-		if (imageFiles.length > 0) {
-			loadImage(imageFiles[0]);
-		}
+		audioFile.subscribe(async (audio) => {
+			if (audio) {
+				await loadAudio(audio);
+			}
+		});
+		imageFile.subscribe((image) => {
+			loadImage(image);
+		});
 		renderer.draw();
 	});
 
@@ -112,30 +102,13 @@
 			renderer.draw();
 		}
 	});
-
-	audioFiles = files.filter((file) => file.type.split('/')[0] === 'audio');
-	imageFiles = files.filter((file) => file.type.split('/')[0] === 'image');
 </script>
 
-{#if audioFiles.length > 0}
-	<select value={0} on:change={handleAudioFileChange}>
-		{#each audioFiles as file, index}
-			<option value={index}>{file.name}</option>
-		{/each}
-	</select>
-	<select value={0} on:change={handleImageFileChange}>
-		{#each imageFiles as file, index}
-			<option value={index}>{file.name}</option>
-		{/each}
-	</select>
-	{#if loading}
-		<span>Loading...</span>
-		{#if progress}
-			<span>{formatProgress(($progress || 0) * 100)}%</span>
-		{/if}
+{#if loading}
+	<span>Loading...</span>
+	{#if progress}
+		<span>{formatProgress(($progress || 0) * 100)}%</span>
 	{/if}
-{:else}
-	<span>Error: at least one audio file (and optionally at least one image file) is required.</span>
 {/if}
 
 <br />

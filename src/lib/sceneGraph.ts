@@ -55,10 +55,14 @@ export class SceneGraph {
 		this.renderer3d = new Renderer3d(frameRate, canvas3d, options);
 	}
 
-	public loadImage(file: File) {
-		const image = new Image();
-		image.src = window.URL.createObjectURL(file);
-		this.renderer2d.setBackgroundImage(image);
+	public loadImage(file: File | undefined) {
+		if (file) {
+			const image = new Image();
+			image.src = window.URL.createObjectURL(file);
+			this.renderer2d.setBackgroundImage(image);
+		} else {
+			this.renderer2d.setBackgroundImage(undefined);
+		}
 	}
 
 	public async export() {
