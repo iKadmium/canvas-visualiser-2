@@ -78,7 +78,8 @@ export class SceneGraph {
 
 	public async draw() {
 		const fft = this.audioPlayer.getSmoothedFft(this.currentFrame, this.options.smoothingFrames);
-		this.renderer3d.draw(fft);
+		const channelData = this.audioPlayer.getChannelData(this.currentFrame, this.frameRate, 0);
+		this.renderer3d.draw(fft, channelData);
 		this.renderer2d.draw(this.currentFrame, this.totalFrames, this.canvas3d);
 	}
 

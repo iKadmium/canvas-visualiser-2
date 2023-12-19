@@ -54,12 +54,21 @@ export class AudioPlayer {
 	public getFft(frame: number) {
 		if (!this.audioBuffer) {
 			return new Array(10).fill(0);
-			//throw new Error('Audio Buffer not initialised');
 		}
 		if (!this.frameFft) {
 			throw new Error('Samples have not been loaded');
 		}
 		return this.frameFft[frame];
+	}
+
+	public getChannelData(frame: number, frameRate: number, channel: number) {
+		if (!this.audioBuffer) {
+			return new Float32Array(800);
+		}
+		const samplesPerFrame = this.audioBuffer.sampleRate / frameRate;
+		const from = samplesPerFrame * frame;
+		const to = samplesPerFrame * (frame + 1);
+		return this.audioBuffer.getChannelData(channel).subarray(from, to);
 	}
 
 	public getChannelCount(): number {

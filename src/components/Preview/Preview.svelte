@@ -100,10 +100,9 @@
 
 	afterUpdate(() => {
 		renderer.setOptions(options);
-		// if (!loading && $audioFile && $imageFile) {
-		// 	renderer.draw();
-		// }
-		renderer.draw();
+		if (!loading && $audioFile && $imageFile) {
+			renderer.draw();
+		}
 	});
 </script>
 
