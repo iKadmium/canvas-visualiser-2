@@ -41,7 +41,7 @@ export class Renderer2d {
 		this.drawPlayhead(edgePadding, timeTextRect, currentFrame / totalFrames);
 		const titleTextRect = this.drawTitleText(elementGap, timeTextRect);
 		this.drawArtistText(elementGap, titleTextRect);
-		this.drawGrid();
+		//this.drawGrid();
 	}
 
 	private drawGrid() {

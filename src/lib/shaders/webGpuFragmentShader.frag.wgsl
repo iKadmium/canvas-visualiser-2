@@ -41,8 +41,7 @@ fn singleEq(pos : vec2f, aspectRatio : f32) -> f32 {
 
   for (var i : i32 = 0; i < eqTotal; i++)
   {
-    let progressPct : f32 = f32(i + 1) / f32(eqTotal + 1);
-    let x : f32 = rescale(progressPct, 0, 1, 0, aspectRatio);
+    let x : f32 = rescale(f32(i) + 1, 0, f32(eqTotal + 1), 0, aspectRatio);
     var strength = abs(uFft[i][0]) * options.uLineHeightMultiplier;
     var y = clamp(strength, minStrength, maxStrength);
     let lineFrom : vec2f = vec2f (x, 0.5 + y);
