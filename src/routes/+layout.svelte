@@ -21,7 +21,7 @@
 		--orange: #ffb86c;
 		--pink: #ff79c6;
 		--purple: #bd93f9;
-		--red: #ff5555;
+		--red: rgb(255, 85, 85);
 		--yellow: #f1fa8c;
 
 		background: var(--background);

@@ -6,13 +6,28 @@ import { StructManager } from './structManager';
 const fftSize = 40;
 
 interface OptionsStruct {
-	iResolution: Float32Array;
-	uBaseColor: Float32Array;
-	uLineColor: Float32Array;
-	uSegmentWidth: number;
-	uGlowIntensity: number;
-	uLineHeightMultiplier: number;
+	resolution: Float32Array;
+	eqGlowColor: Float32Array;
+	eqLineColor: Float32Array;
+	scopeColor: Float32Array;
+	waterColor: Float32Array;
+	eqSegmentWidth: number;
+	eqGlowIntensity: number;
+	eqLineHeightMultiplier: number;
+	eqEnabled: boolean;
+	scopeEnabled: boolean;
+	discoTeqEnabled: boolean;
+	wetEnabled: boolean;
 	[key: string]: unknown;
+}
+
+interface BufferSet {
+	optionsBuffer: GPUBuffer;
+	fftBuffer: GPUBuffer;
+	samplesBuffer: GPUBuffer;
+	timeBuffer: GPUBuffer;
+	bindGroup: GPUBindGroup;
+	textureView: GPUTextureView;
 }
 
 export class RendererWebGpu {
@@ -21,12 +36,9 @@ export class RendererWebGpu {
 	private frameRate: number;
 	private pipeline: GPURenderPipeline | undefined;
 	private device: GPUDevice | undefined;
-	private optionsBuffer: GPUBuffer | undefined;
 	private optionsStructManager: StructManager<OptionsStruct>;
-	private fftBuffer: GPUBuffer | undefined;
 	private fftBufferArray: Float32Array;
-	private samplesBuffer: GPUBuffer | undefined;
-	private bindGroup: GPUBindGroup | undefined;
+	private buffers: BufferSet | undefined;
 
 	constructor(frameRate: number, canvas: HTMLCanvasElement, options: RendererOptions) {
 		this.canvas = canvas;
@@ -52,6 +64,7 @@ export class RendererWebGpu {
 		const devicePixelRatio = window.devicePixelRatio;
 		this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
 		this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
+		const presentationSize = [this.canvas.clientWidth * devicePixelRatio, this.canvas.clientHeight * devicePixelRatio];
 		const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
 		this.renderContext.configure({
@@ -84,38 +97,63 @@ export class RendererWebGpu {
 			}
 		});
 
-		this.optionsBuffer = this.device.createBuffer(this.optionsStructManager.getBufferDescriptor());
+		const optionsBuffer = this.device.createBuffer(this.optionsStructManager.getBufferDescriptor());
 
-		this.fftBuffer = this.device.createBuffer({
+		const fftBuffer = this.device.createBuffer({
 			label: 'Fft',
 			size: this.fftBufferArray.byteLength,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
 		});
 
-		this.samplesBuffer = this.device.createBuffer({
+		const samplesBuffer = this.device.createBuffer({
 			label: 'Samples',
 			size: (48000 / this.frameRate) * Float32Array.BYTES_PER_ELEMENT,
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
 		});
 
-		this.bindGroup = this.device.createBindGroup({
+		const timeBuffer = this.device.createBuffer({
+			label: 'Time',
+			size: Float32Array.BYTES_PER_ELEMENT,
+			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+		});
+
+		const bindGroup = this.device.createBindGroup({
 			label: 'FFT renderer Bind Group',
 			layout: this.pipeline.getBindGroupLayout(0),
 			entries: [
 				{
 					binding: 0,
-					resource: { buffer: this.optionsBuffer }
+					resource: { buffer: optionsBuffer }
 				},
 				{
 					binding: 1,
-					resource: { buffer: this.fftBuffer }
+					resource: { buffer: fftBuffer }
 				},
 				{
 					binding: 2,
-					resource: { buffer: this.samplesBuffer }
+					resource: { buffer: timeBuffer }
+				},
+				{
+					binding: 3,
+					resource: { buffer: samplesBuffer }
 				}
 			]
 		});
+
+		const texture = this.device.createTexture({
+			size: presentationSize,
+			format: presentationFormat,
+			usage: GPUTextureUsage.RENDER_ATTACHMENT
+		});
+
+		this.buffers = {
+			bindGroup,
+			fftBuffer,
+			optionsBuffer,
+			samplesBuffer,
+			timeBuffer,
+			textureView: texture.createView()
+		};
 	}
 
 	private hexStringToFloats(hexString: string): Float32Array {
@@ -130,35 +168,29 @@ export class RendererWebGpu {
 		return bytes;
 	}
 
-	public draw(fft: number[], channelData: Float32Array) {
+	public draw(frame: number, fft: number[], channelData: Float32Array) {
 		if (!this.device) {
 			throw new Error('Device not initialised');
 		}
 		if (!this.pipeline) {
 			throw new Error('Pipeline not initialised');
 		}
-		if (!this.fftBuffer) {
-			throw new Error('FFT Buffer not initialised');
-		}
-		if (!this.samplesBuffer) {
-			throw new Error('Samples buffer not initialisid');
-		}
-		if (!this.bindGroup) {
-			throw new Error('Bind group not initialised');
+		if (!this.buffers) {
+			throw new Error('Buffers not initialised');
 		}
 		const commandEncoder = this.device.createCommandEncoder();
-		const textureView = this.renderContext.getCurrentTexture().createView();
 
 		for (let i = 0; i < fft.length; i++) {
 			this.fftBufferArray[i * 4] = fft[i];
 		}
-		this.device.queue.writeBuffer(this.fftBuffer, 0, this.fftBufferArray);
-		this.device.queue.writeBuffer(this.samplesBuffer, 0, channelData);
+		this.device.queue.writeBuffer(this.buffers.fftBuffer, 0, this.fftBufferArray);
+		this.device.queue.writeBuffer(this.buffers.timeBuffer, 0, new Float32Array([frame]));
+		this.device.queue.writeBuffer(this.buffers.samplesBuffer, 0, channelData);
 
 		const renderPassDescriptor: GPURenderPassDescriptor = {
 			colorAttachments: [
 				{
-					view: textureView,
+					view: this.renderContext.getCurrentTexture().createView(),
 					clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
 					loadOp: 'clear',
 					storeOp: 'store'
@@ -168,7 +200,7 @@ export class RendererWebGpu {
 
 		const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 		passEncoder.setPipeline(this.pipeline);
-		passEncoder.setBindGroup(0, this.bindGroup);
+		passEncoder.setBindGroup(0, this.buffers.bindGroup);
 		passEncoder.draw(5);
 		passEncoder.end();
 
@@ -177,17 +209,23 @@ export class RendererWebGpu {
 
 	public setOptions(options: RendererOptions) {
 		this.optionsStructManager.setMembers(this.getOptions(options));
-		this.device?.queue.writeBuffer(this.optionsBuffer!, 0, this.optionsStructManager.getBuffer());
+		this.device?.queue.writeBuffer(this.buffers!.optionsBuffer!, 0, this.optionsStructManager.getBuffer());
 	}
 
 	private getOptions(options: RendererOptions): OptionsStruct {
 		const struct: OptionsStruct = {
-			iResolution: new Float32Array([this.canvas.width, this.canvas.height, 0]),
-			uBaseColor: this.hexStringToFloats(options.eqGlowStyle),
-			uLineColor: this.hexStringToFloats(options.eqLineStyle),
-			uGlowIntensity: options.eqGlowIntensity,
-			uLineHeightMultiplier: options.eqLineHeightMultiplier,
-			uSegmentWidth: options.eqSegmentWidth
+			resolution: new Float32Array([this.canvas.width, this.canvas.height]),
+			eqGlowColor: this.hexStringToFloats(options.eqGlowStyle),
+			eqLineColor: this.hexStringToFloats(options.eqLineStyle),
+			eqGlowIntensity: options.eqGlowIntensity,
+			eqLineHeightMultiplier: options.eqLineHeightMultiplier,
+			eqSegmentWidth: options.eqSegmentWidth,
+			scopeColor: this.hexStringToFloats(options.scopeColor),
+			waterColor: this.hexStringToFloats(options.waterColor),
+			discoTeqEnabled: options.discoteqEnabled,
+			eqEnabled: options.eqEnabled,
+			scopeEnabled: options.scopeEnabled,
+			wetEnabled: options.wetEnabled
 		};
 		return struct;
 	}

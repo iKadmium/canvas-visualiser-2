@@ -19,6 +19,10 @@
 		{
 			id: 'style',
 			title: 'Style'
+		},
+		{
+			id: 'layers',
+			title: 'Layers'
 		}
 	];
 </script>
@@ -53,6 +57,8 @@
 				id="eqLineHeight"
 			/>
 			<label for="eqGlowStyle">EQ Glow Style</label><input type="color" bind:value={options.eqGlowStyle} id="eqGlowStyle" />
+			<label for="scopeColor">Scope Color</label><input type="color" bind:value={options.scopeColor} id="scopeColor" />
+			<label for="waterColor">Water Color</label><input type="color" bind:value={options.waterColor} id="waterColor" />
 			<label for="lowerThirdFillStyle">Lower Third Fill Style</label><input type="color" bind:value={options.lowerThirdFillStyle} id="lowerThirdFillStyle" />
 			<label for="lowerThirdOpacity">Lower Third Opacity</label>
 			<input type="number" bind:value={options.lowerThirdOpacity} min="0" max="1" step="0.01" id="lowerThirdOpacity" />
@@ -67,6 +73,14 @@
 		<div class="options">
 			<label for="video-bitrate">Video Bitrate (mbps)</label><input type="number" bind:value={options.videoBitrate} min="1" id="video-bitrate" />
 			<label for="audio-bitrate">Audio Bitrate (kbps)</label><input type="number" bind:value={options.audioBitrate} min="1" id="audio-bitrate" />
+		</div>
+	</Tab>
+	<Tab id="layers">
+		<div class="options">
+			<label for="eq-enabled">EQ Enabled</label><input type="checkbox" bind:checked={options.eqEnabled} id="eq-enabled" />
+			<label for="scope-enabled">Scope Enabled</label><input type="checkbox" bind:checked={options.scopeEnabled} id="scope-enabled" />
+			<label for="discoteq-enabled">Discoteq Enabled</label><input type="checkbox" bind:checked={options.discoteqEnabled} id="discoteq-enabled" />
+			<label for="wet-enabled">Wet Enabled</label><input type="checkbox" bind:checked={options.wetEnabled} id="wet-enabled" />
 		</div>
 	</Tab>
 </TabStrip>

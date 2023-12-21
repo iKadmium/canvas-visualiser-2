@@ -6,7 +6,7 @@ export class Renderer2d {
 	private renderContex2d: CanvasRenderingContext2D;
 	private canvas: HTMLCanvasElement;
 	private backgroundImage?: HTMLImageElement;
-	private backgroundImageCache?: ImageData;
+	private offscreenCanvas: HTMLCanvasElement;
 	private frameRate: number;
 	public options: RendererOptions;
 
@@ -20,6 +20,9 @@ export class Renderer2d {
 			throw new Error('Could not get 2D render context');
 		}
 		this.frameRate = frameRate;
+		this.offscreenCanvas = document.createElement('canvas');
+		this.offscreenCanvas.width = this.canvas.width;
+		this.offscreenCanvas.height = this.canvas.height;
 	}
 
 	public draw(currentFrame: number, totalFrames: number, otherCanvas: HTMLCanvasElement) {
@@ -63,9 +66,13 @@ export class Renderer2d {
 	public setBackgroundImage(image: HTMLImageElement | undefined) {
 		this.backgroundImage = image;
 		if (image) {
-			this.backgroundImageCache = this.createBackgroundImageCache(image, 32);
+			this.setBackgroundToOffscreenCanvas(image, 32);
 		} else {
-			this.backgroundImageCache = undefined;
+			const context = this.offscreenCanvas.getContext('2d');
+			if (!context) {
+				throw new Error('Could not get render context');
+			}
+			context.clearRect(0, 0, this.offscreenCanvas.width, this.offscreenCanvas.height);
 		}
 	}
 
@@ -83,22 +90,20 @@ export class Renderer2d {
 	}
 
 	private drawBackground() {
-		if (this.backgroundImageCache) {
-			this.renderContex2d.putImageData(this.backgroundImageCache, 0, 0);
-		}
+		this.renderContex2d.drawImage(this.offscreenCanvas, 0, 0);
 	}
 
-	private createBackgroundImageCache(image: HTMLImageElement, blurRadius: number) {
-		this.renderContex2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		this.renderContex2d.filter = `blur(${blurRadius}px)`;
+	private setBackgroundToOffscreenCanvas(image: HTMLImageElement, blurRadius: number) {
+		const offscreenRenderContext = this.offscreenCanvas.getContext('2d');
+		if (!offscreenRenderContext) {
+			throw new Error("Couldn't get offscreen render context");
+		}
+		offscreenRenderContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		offscreenRenderContext.filter = `blur(${blurRadius}px)`;
 
 		const targetRect = coverRect({ x: 0, y: 0, w: image.width, h: image.height }, { x: 0, y: 0, w: this.canvas.width, h: this.canvas.height });
-		this.renderContex2d.drawImage(image, targetRect.x, targetRect.y, targetRect.w, targetRect.h);
-		this.renderContex2d.filter = 'blur(0px)';
-
-		const imageData = this.renderContex2d.getImageData(0, 0, this.canvas.width, this.canvas.height);
-		this.renderContex2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		return imageData;
+		offscreenRenderContext.drawImage(image, targetRect.x, targetRect.y, targetRect.w, targetRect.h);
+		offscreenRenderContext.filter = 'blur(0px)';
 	}
 
 	private addOpacity(color: string | CanvasPattern | CanvasGradient, opacity: number) {

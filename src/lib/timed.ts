@@ -1,7 +1,7 @@
 export function timed<T>(operation: () => T) {
-	const before = Date.now();
+	const before = performance.now();
 	const result = operation();
-	const after = Date.now();
+	const after = performance.now();
 	return { time: after - before, result };
 }
 
@@ -12,9 +12,9 @@ export function logTimed<T>(name: string, operation: () => T) {
 }
 
 export async function timedAsync<T>(operation: () => Promise<T>) {
-	const before = Date.now();
+	const before = performance.now();
 	const result = await operation();
-	const after = Date.now();
+	const after = performance.now();
 	return { time: after - before, result };
 }
 

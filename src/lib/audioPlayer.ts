@@ -40,8 +40,11 @@ export class AudioPlayer {
 		if (!this.frameFft) {
 			throw new Error('Samples have not been loaded');
 		}
+		if (frame < 0 || frame >= this.frameFft.length) {
+			return new Array(10).fill(0);
+		}
 		const smoothed: number[] = [];
-		for (let i = 0; i < this.frameFft[frame].length; i++) {
+		for (let i = 0; this.frameFft[frame] && i < this.frameFft[frame].length; i++) {
 			const values: number[] = [];
 			for (let j = frame; j < smoothingFrames + frame && j < this.frameFft.length; j++) {
 				values.push(this.frameFft[j][i]);

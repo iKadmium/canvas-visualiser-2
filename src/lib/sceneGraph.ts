@@ -14,6 +14,8 @@ export interface RendererOptions {
 	smoothingFrames: number;
 	eqLineHeightMultiplier: number;
 	eqLineStyle: string;
+	scopeColor: string;
+	waterColor: string;
 	eqSegmentWidth: number;
 	eqGlowIntensity: number;
 	eqGlowStyle: string;
@@ -24,6 +26,11 @@ export interface RendererOptions {
 	textFillStyle: string | CanvasGradient | CanvasPattern;
 	font: string;
 	imageSmoothing: boolean;
+
+	eqEnabled: boolean;
+	scopeEnabled: boolean;
+	wetEnabled: boolean;
+	discoteqEnabled: boolean;
 }
 
 export class SceneGraph {
@@ -76,10 +83,10 @@ export class SceneGraph {
 		await this.exporter.export(this.canvas2d, this.audioPlayer, this.frameRate, 0, this.totalFrames, this);
 	}
 
-	public async draw() {
+	public draw() {
 		const fft = this.audioPlayer.getSmoothedFft(this.currentFrame, this.options.smoothingFrames);
 		const channelData = this.audioPlayer.getChannelData(this.currentFrame, this.frameRate, 0);
-		this.renderer3d.draw(fft, channelData);
+		this.renderer3d.draw(this.currentFrame, fft, channelData);
 		this.renderer2d.draw(this.currentFrame, this.totalFrames, this.canvas3d);
 	}
 
@@ -98,16 +105,20 @@ export class SceneGraph {
 		}
 		this.playing = true;
 		await this.audioPlayer.play();
-		window.setInterval(async () => {
+		const renderer = () => {
 			if (this.currentFrame >= this.totalFrames) {
 				this.stop();
 				this.seek(this.totalFrames);
 				return;
 			}
-			this.currentFrame = Math.round(this.audioPlayer.getAudioTime() * this.frameRate);
-			this.playHead.value = this.currentFrame.toString();
-			await this.draw();
-		}, 1 / this.frameRate);
+			if (this.playing) {
+				this.currentFrame = Math.round(this.audioPlayer.getAudioTime() * this.frameRate);
+				this.playHead.value = this.currentFrame.toString();
+				this.draw();
+				requestAnimationFrame(renderer);
+			}
+		};
+		requestAnimationFrame(renderer);
 	}
 
 	public stop() {

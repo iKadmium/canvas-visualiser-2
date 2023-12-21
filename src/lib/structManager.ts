@@ -21,7 +21,7 @@ export class StructManager<T extends Record<string, unknown>> {
 			}
 			const value = values[member.name];
 			if (value === null || value === undefined) {
-				throw new Error(`${this.info.name} was undefined`);
+				throw new Error(`${member.name} was undefined`);
 			}
 
 			switch (member.type.name) {
@@ -38,6 +38,18 @@ export class StructManager<T extends Record<string, unknown>> {
 						throw new Error(`${member.name} was not an array`);
 					}
 					new Float32Array(this.buffer, member.offset, member.size / Float32Array.BYTES_PER_ELEMENT).set(value as ArrayLike<number>);
+					break;
+				case 'u32':
+					switch (typeof value) {
+						case 'boolean':
+							new Uint32Array(this.buffer, member.offset, member.size / Uint32Array.BYTES_PER_ELEMENT).set([(value as boolean) ? 1 : 0]);
+							break;
+						case 'number':
+							new Uint32Array(this.buffer, member.offset, member.size / Uint32Array.BYTES_PER_ELEMENT).set([value]);
+							break;
+						default:
+							throw new Error(`${member.name} was not a boolean or number`);
+					}
 					break;
 				default:
 					throw new Error(`No way to set values for type ${member.type.name}`);

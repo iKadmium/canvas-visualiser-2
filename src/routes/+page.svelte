@@ -16,6 +16,8 @@
 		smoothingFrames: 10,
 		eqSegmentWidth: 0.04,
 		eqGlowIntensity: 0.01,
+		scopeColor: '#bd93f9',
+		waterColor: '#bd93f9',
 		textFillStyle: '#f8f8f2',
 		playheadStrokeStyle: '#f8f8f2',
 		playheadLineWidth: 2,
@@ -25,7 +27,12 @@
 		eqLineStyle: '#282a36',
 		eqGlowStyle: '#bd93f9',
 		font: 'normal 300 32px Roboto',
-		imageSmoothing: true
+		imageSmoothing: true,
+
+		eqEnabled: true,
+		scopeEnabled: false,
+		discoteqEnabled: false,
+		wetEnabled: false
 	};
 
 	let width = 1920;
