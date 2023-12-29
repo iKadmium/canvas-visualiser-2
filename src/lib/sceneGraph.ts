@@ -2,14 +2,18 @@ import type { Writable } from 'svelte/store';
 import { AudioPlayer } from './audioPlayer';
 import { EncoderExporter } from './encoderExporter';
 import type { IExporter } from './exporter';
-import { Renderer2d } from './renderer2d';
-import { RendererWebGpu } from './rendererWebGpu';
+import { Renderer2d } from './renderers/renderer2d';
+import { RendererWebGpu } from './renderers/rendererWebGpu';
+import { BackgroundRenderer } from './renderers/backgroundRenderer';
 
 export interface RendererOptions {
 	artist: string;
 	title: string;
 	audioBitrate: number;
 	videoBitrate: number;
+
+	height: number;
+	width: number;
 
 	smoothingFrames: number;
 	eqLineHeightMultiplier: number;
@@ -42,12 +46,12 @@ export class SceneGraph {
 	private totalFrames: number;
 	private renderer2d: Renderer2d;
 	private renderer3d: RendererWebGpu;
-	private canvas2d: HTMLCanvasElement;
-	private canvas3d: HTMLCanvasElement;
+	private backgroundRenderer: BackgroundRenderer;
+	private canvas: HTMLCanvasElement;
 	private options: RendererOptions;
 	private exporter: IExporter;
 
-	constructor(frameRate: number, playHead: HTMLInputElement, canvas2d: HTMLCanvasElement, canvas3d: HTMLCanvasElement, options: RendererOptions) {
+	constructor(frameRate: number, playHead: HTMLInputElement, canvas2d: HTMLCanvasElement, options: RendererOptions) {
 		this.playing = false;
 		this.currentFrame = 0;
 		this.frameRate = frameRate;
@@ -56,38 +60,35 @@ export class SceneGraph {
 		this.playHead = playHead;
 		this.totalFrames = 0;
 		this.options = options;
-		this.canvas2d = canvas2d;
-		this.canvas3d = canvas3d;
-		this.renderer2d = new Renderer2d(frameRate, canvas2d, options);
-		this.renderer3d = new RendererWebGpu(frameRate, canvas3d, options);
+		this.canvas = canvas2d;
+		this.renderer2d = new Renderer2d(frameRate, options);
+		this.renderer3d = new RendererWebGpu(frameRate, options);
+		this.backgroundRenderer = new BackgroundRenderer(options);
 		this.exporter = new EncoderExporter();
 	}
 
 	public loadImage(file: File | undefined) {
-		return new Promise<void>((resolve) => {
-			if (file) {
-				const image = new Image();
-				image.src = window.URL.createObjectURL(file);
-				image.addEventListener('load', () => {
-					this.renderer2d.setBackgroundImage(image);
-					resolve();
-				});
-			} else {
-				this.renderer2d.setBackgroundImage(undefined);
-				resolve();
-			}
-		});
+		return this.backgroundRenderer.loadFromFile(file);
 	}
 
 	public async export() {
-		await this.exporter.export(this.canvas2d, this.audioPlayer, this.frameRate, 0, this.totalFrames, this);
+		await this.exporter.export(this.canvas, this.audioPlayer, this.frameRate, 0, this.totalFrames, this);
 	}
 
 	public draw() {
-		const fft = this.audioPlayer.getSmoothedFft(this.currentFrame, this.options.smoothingFrames);
-		const channelData = this.audioPlayer.getChannelData(this.currentFrame, this.frameRate, 0);
-		this.renderer3d.draw(this.currentFrame, fft, channelData);
-		this.renderer2d.draw(this.currentFrame, this.totalFrames, this.canvas3d);
+		const context = this.canvas.getContext('2d');
+		if (context) {
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+			const fft = this.audioPlayer.getSmoothedFft(this.currentFrame, this.options.smoothingFrames);
+			const channelData = this.audioPlayer.getChannelData(this.currentFrame, this.frameRate, 0);
+
+			this.renderer3d.render(this.currentFrame, fft, channelData);
+			this.renderer2d.render(this.currentFrame, this.totalFrames);
+
+			this.backgroundRenderer.draw(context);
+			this.renderer3d.draw(context);
+			this.renderer2d.draw(context);
+		}
 	}
 
 	public seek(frame: number) {
@@ -137,8 +138,9 @@ export class SceneGraph {
 		await this.renderer3d.init();
 	}
 
-	public setOptions(options: RendererOptions) {
-		this.renderer2d.options = options;
-		this.renderer3d.setOptions(options);
+	public async setOptions(options: RendererOptions) {
+		this.backgroundRenderer.setOptions(options);
+		this.renderer2d.setOptions(options);
+		await this.renderer3d.setOptions(options);
 	}
 }

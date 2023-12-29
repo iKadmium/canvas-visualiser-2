@@ -4,8 +4,6 @@
 	import TabStrip, { type TabConfig } from '../TabStrip/TabStrip.svelte';
 
 	export let options: RendererOptions;
-	export let width: number;
-	export let height: number;
 
 	const tabs: TabConfig[] = [
 		{
@@ -30,8 +28,8 @@
 <TabStrip {tabs}>
 	<Tab id="main">
 		<div class="options">
-			<label for="width">Width</label><input type="number" bind:value={width} min="1" id="width" />
-			<label for="height">Height</label><input type="number" bind:value={height} min="1" id="height" />
+			<label for="width">Width</label><input type="number" bind:value={options.width} min="1" id="width" />
+			<label for="height">Height</label><input type="number" bind:value={options.height} min="1" id="height" />
 			<label for="artist">Artist</label><input type="text" bind:value={options.artist} id="artist" />
 			<label for="title">Title</label><input type="text" bind:value={options.title} id="title" />
 		</div>

@@ -13,6 +13,9 @@
 		audioBitrate: 256,
 		videoBitrate: 20,
 
+		width: 1920,
+		height: 1080,
+
 		smoothingFrames: 10,
 		eqSegmentWidth: 0.04,
 		eqGlowIntensity: 0.01,
@@ -34,9 +37,6 @@
 		discoteqEnabled: false,
 		wetEnabled: false
 	};
-
-	let width = 1920;
-	let height = 1080;
 </script>
 
 <h1>Visualiser generator</h1>
@@ -45,10 +45,10 @@
 	<FileSelector title="Audio Files" on:fileSelected={(event) => audioFile.set(event.detail)} />
 	<FileSelector title="Background" on:fileSelected={(event) => imageFile.set(event.detail)} />
 </div>
-<Options bind:options bind:width bind:height />
+<Options bind:options />
 
 {#if audioFile}
-	<Preview {audioFile} {imageFile} {options} {width} {height} />
+	<Preview {audioFile} {imageFile} {options} />
 {/if}
 
 <style>

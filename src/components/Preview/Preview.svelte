@@ -4,7 +4,6 @@
 	import { writable, type Unsubscriber, type Writable } from 'svelte/store';
 
 	let canvas2d: HTMLCanvasElement;
-	let canvas3d: HTMLCanvasElement;
 	let playHead: HTMLInputElement;
 	const unsubscribers: Unsubscriber[] = [];
 
@@ -12,20 +11,18 @@
 	export let audioFile: Writable<File | undefined>;
 	export let imageFile: Writable<File | undefined>;
 	let loading = false;
-	export let width: number;
-	export let height: number;
 	let frameRate = 60;
 	let currentFrame = 0;
 	let progress: Writable<number> | undefined;
 
-	let renderer: SceneGraph;
+	let sceneGraph: SceneGraph;
 
 	async function loadAudio(file: File) {
 		loading = true;
 		progress = writable(0);
 		try {
-			await renderer.loadAudio(file, progress);
-			renderer.draw();
+			await sceneGraph.loadAudio(file, progress);
+			sceneGraph.draw();
 		} catch (reason) {
 			console.error(reason);
 		} finally {
@@ -37,7 +34,7 @@
 	async function loadImage(file: File | undefined) {
 		loading = true;
 		try {
-			await renderer.loadImage(file);
+			await sceneGraph.loadImage(file);
 		} catch (reason) {
 			console.error(reason);
 		} finally {
@@ -47,23 +44,23 @@
 
 	async function handleSeek(event: Event & { currentTarget: EventTarget & HTMLInputElement }) {
 		currentFrame = parseInt(event.currentTarget.value);
-		renderer.seek(currentFrame);
-		renderer.draw();
+		sceneGraph.seek(currentFrame);
+		sceneGraph.draw();
 	}
 
 	async function handlePlayPause() {
-		if (renderer.isPlaying()) {
-			renderer.stop();
+		if (sceneGraph.isPlaying()) {
+			sceneGraph.stop();
 		} else {
-			renderer.play();
+			sceneGraph.play();
 		}
 	}
 
 	async function handleRender() {
-		if (renderer.isPlaying()) {
-			renderer.stop();
+		if (sceneGraph.isPlaying()) {
+			sceneGraph.stop();
 		}
-		await renderer.export();
+		await sceneGraph.export();
 	}
 
 	function formatProgress(prog: number) {
@@ -74,8 +71,8 @@
 	}
 
 	onMount(async () => {
-		renderer = new SceneGraph(frameRate, playHead, canvas2d, canvas3d, options);
-		await renderer.init();
+		sceneGraph = new SceneGraph(frameRate, playHead, canvas2d, options);
+		await sceneGraph.init();
 		unsubscribers.push(
 			audioFile.subscribe(async (audio) => {
 				if (audio) {
@@ -88,21 +85,19 @@
 				loadImage(image);
 			})
 		);
-		renderer.draw();
+		sceneGraph.draw();
 	});
 
 	onDestroy(() => {
 		for (const unsubscriber of unsubscribers) {
 			unsubscriber();
 		}
-		renderer.stop();
+		sceneGraph.stop();
 	});
 
-	afterUpdate(() => {
-		renderer.setOptions(options);
-		if (!loading && $audioFile && $imageFile) {
-			renderer.draw();
-		}
+	afterUpdate(async () => {
+		await sceneGraph.setOptions(options);
+		sceneGraph.draw();
 	});
 </script>
 
@@ -114,15 +109,12 @@
 {/if}
 
 <br />
-<canvas bind:this={canvas2d} {width} {height} />
+<canvas bind:this={canvas2d} width={options.width} height={options.height} />
 <br />
-<input type="range" style={`width: ${width}px`} on:input={handleSeek} on:change={handleSeek} bind:this={playHead} />
+<input type="range" style={`width: ${options.width}px`} on:input={handleSeek} on:change={handleSeek} bind:this={playHead} />
 <br />
 <button on:click={handlePlayPause}>Play</button>
 <button on:click={handleRender}>Render</button>
-
-<br />
-<canvas bind:this={canvas3d} {width} {height} style="visibility: hidden;" />
 
 <style>
 	canvas {

@@ -1,50 +1,45 @@
 import { intervalToDuration, type Duration } from 'date-fns';
-import { coverRect, fitRect, getRect, type Rect } from './rect';
-import type { RendererOptions } from './sceneGraph';
+import { fitRect, getRect, type Rect } from '../rect';
+import type { RendererOptions } from '../sceneGraph';
 
 export class Renderer2d {
 	private renderContex2d: CanvasRenderingContext2D;
 	private canvas: HTMLCanvasElement;
 	private backgroundImage?: HTMLImageElement;
-	private offscreenCanvas: HTMLCanvasElement;
 	private frameRate: number;
-	public options: RendererOptions;
+	private options: RendererOptions;
 
-	constructor(frameRate: number, canvas: HTMLCanvasElement, options: RendererOptions) {
-		this.canvas = canvas;
-		this.options = options;
-		const renderContex2d = canvas.getContext('2d');
+	constructor(frameRate: number, options: RendererOptions) {
+		this.canvas = document.createElement('canvas');
+		const renderContex2d = this.canvas.getContext('2d');
 		if (renderContex2d) {
 			this.renderContex2d = renderContex2d;
 		} else {
 			throw new Error('Could not get 2D render context');
 		}
+		this.options = options;
+		this.setOptions(options);
 		this.frameRate = frameRate;
-		this.offscreenCanvas = document.createElement('canvas');
-		this.offscreenCanvas.width = this.canvas.width;
-		this.offscreenCanvas.height = this.canvas.height;
 	}
 
-	public draw(currentFrame: number, totalFrames: number, otherCanvas: HTMLCanvasElement) {
+	public render(currentFrame: number, totalFrames: number) {
 		const edgePadding = 32;
-		this.renderContex2d.imageSmoothingEnabled = this.options.imageSmoothing;
-		this.renderContex2d.imageSmoothingQuality = 'high';
-		this.renderContex2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		this.drawBackground();
-
-		this.renderContex2d.drawImage(otherCanvas, 0, 0);
-		this.drawForeground(edgePadding);
-
 		const elementGap = 16;
 
+		this.renderContex2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+		this.drawForeground(edgePadding);
 		this.drawLowerThird(edgePadding * 2 + 22 * 3 + elementGap * 2);
 
-		this.renderContex2d.font = this.options.font;
 		const timeTextRect = this.drawTimeText(edgePadding, currentFrame, totalFrames);
 		this.drawPlayhead(edgePadding, timeTextRect, currentFrame / totalFrames);
 		const titleTextRect = this.drawTitleText(elementGap, timeTextRect);
 		this.drawArtistText(elementGap, titleTextRect);
 		//this.drawGrid();
+	}
+
+	public draw(context: CanvasRenderingContext2D) {
+		context.drawImage(this.canvas, 0, 0);
 	}
 
 	private drawGrid() {
@@ -63,19 +58,6 @@ export class Renderer2d {
 		}
 	}
 
-	public setBackgroundImage(image: HTMLImageElement | undefined) {
-		this.backgroundImage = image;
-		if (image) {
-			this.setBackgroundToOffscreenCanvas(image, 32);
-		} else {
-			const context = this.offscreenCanvas.getContext('2d');
-			if (!context) {
-				throw new Error('Could not get render context');
-			}
-			context.clearRect(0, 0, this.offscreenCanvas.width, this.offscreenCanvas.height);
-		}
-	}
-
 	private drawForeground(padding: number) {
 		if (this.backgroundImage) {
 			const width = this.canvas.width / 4;
@@ -87,23 +69,6 @@ export class Renderer2d {
 			targetRect.x = this.canvas.width - targetRect.w - padding;
 			this.renderContex2d.drawImage(this.backgroundImage, targetRect.x, targetRect.y, targetRect.w, targetRect.h);
 		}
-	}
-
-	private drawBackground() {
-		this.renderContex2d.drawImage(this.offscreenCanvas, 0, 0);
-	}
-
-	private setBackgroundToOffscreenCanvas(image: HTMLImageElement, blurRadius: number) {
-		const offscreenRenderContext = this.offscreenCanvas.getContext('2d');
-		if (!offscreenRenderContext) {
-			throw new Error("Couldn't get offscreen render context");
-		}
-		offscreenRenderContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		offscreenRenderContext.filter = `blur(${blurRadius}px)`;
-
-		const targetRect = coverRect({ x: 0, y: 0, w: image.width, h: image.height }, { x: 0, y: 0, w: this.canvas.width, h: this.canvas.height });
-		offscreenRenderContext.drawImage(image, targetRect.x, targetRect.y, targetRect.w, targetRect.h);
-		offscreenRenderContext.filter = 'blur(0px)';
 	}
 
 	private addOpacity(color: string | CanvasPattern | CanvasGradient, opacity: number) {
@@ -182,5 +147,12 @@ export class Renderer2d {
 		const secondsString = duration.seconds?.toString().padStart(2, '0');
 		const time = `${minutesString}:${secondsString}`;
 		return time;
+	}
+
+	public setOptions(options: RendererOptions) {
+		this.options = options;
+		this.canvas.width = options.width;
+		this.canvas.height = options.height;
+		this.renderContex2d.font = this.options.font;
 	}
 }

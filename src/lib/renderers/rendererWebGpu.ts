@@ -1,7 +1,7 @@
-import type { RendererOptions } from './sceneGraph';
-import fragmentShader from './shaders/webGpuFragmentShader.frag.wgsl?raw';
-import vertexShader from './shaders/webGpuVertexShader.vert.wgsl?raw';
-import { StructManager } from './structManager';
+import type { RendererOptions } from '../sceneGraph';
+import fragmentShader from '../shaders/webGpuFragmentShader.frag.wgsl?raw';
+import vertexShader from '../shaders/webGpuVertexShader.vert.wgsl?raw';
+import { StructManager } from '../structManager';
 
 const fftSize = 40;
 
@@ -40,9 +40,9 @@ export class RendererWebGpu {
 	private fftBufferArray: Float32Array;
 	private buffers: BufferSet | undefined;
 
-	constructor(frameRate: number, canvas: HTMLCanvasElement, options: RendererOptions) {
-		this.canvas = canvas;
-		const gl = canvas.getContext('webgpu');
+	constructor(frameRate: number, options: RendererOptions) {
+		this.canvas = document.createElement('canvas');
+		const gl = this.canvas.getContext('webgpu');
 		if (gl) {
 			this.renderContext = gl;
 		} else {
@@ -50,7 +50,7 @@ export class RendererWebGpu {
 		}
 		this.fftBufferArray = new Float32Array(fftSize);
 		this.optionsStructManager = new StructManager<OptionsStruct>('Options', fragmentShader);
-		this.optionsStructManager.setMembers(this.getOptions(options));
+		this.setOptions(options, true);
 		this.frameRate = frameRate;
 	}
 
@@ -62,8 +62,6 @@ export class RendererWebGpu {
 		this.device = await adapter.requestDevice();
 
 		const devicePixelRatio = window.devicePixelRatio;
-		this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
-		this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
 		const presentationSize = [this.canvas.clientWidth * devicePixelRatio, this.canvas.clientHeight * devicePixelRatio];
 		const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
@@ -168,7 +166,7 @@ export class RendererWebGpu {
 		return bytes;
 	}
 
-	public draw(frame: number, fft: number[], channelData: Float32Array) {
+	public render(frame: number, fft: number[], channelData: Float32Array) {
 		if (!this.device) {
 			throw new Error('Device not initialised');
 		}
@@ -183,6 +181,7 @@ export class RendererWebGpu {
 		for (let i = 0; i < fft.length; i++) {
 			this.fftBufferArray[i * 4] = fft[i];
 		}
+
 		this.device.queue.writeBuffer(this.buffers.fftBuffer, 0, this.fftBufferArray);
 		this.device.queue.writeBuffer(this.buffers.timeBuffer, 0, new Float32Array([frame]));
 		this.device.queue.writeBuffer(this.buffers.samplesBuffer, 0, channelData);
@@ -207,7 +206,18 @@ export class RendererWebGpu {
 		this.device.queue.submit([commandEncoder.finish()]);
 	}
 
-	public setOptions(options: RendererOptions) {
+	public draw(context: CanvasRenderingContext2D) {
+		context.drawImage(this.canvas, 0, 0);
+	}
+
+	public async setOptions(options: RendererOptions, skipInit: boolean = false) {
+		if (this.canvas.width !== options.width || this.canvas.height !== options.height) {
+			this.canvas.width = options.width;
+			this.canvas.height = options.height;
+			if (!skipInit) {
+				await this.init();
+			}
+		}
 		this.optionsStructManager.setMembers(this.getOptions(options));
 		this.device?.queue.writeBuffer(this.buffers!.optionsBuffer!, 0, this.optionsStructManager.getBuffer());
 	}
@@ -215,13 +225,13 @@ export class RendererWebGpu {
 	private getOptions(options: RendererOptions): OptionsStruct {
 		const struct: OptionsStruct = {
 			resolution: new Float32Array([this.canvas.width, this.canvas.height]),
-			eqGlowColor: this.hexStringToFloats(options.eqGlowStyle),
-			eqLineColor: this.hexStringToFloats(options.eqLineStyle),
+			eqGlowColor: this.hexStringToFloats(options.eqGlowStyle || '#000000'),
+			eqLineColor: this.hexStringToFloats(options.eqLineStyle || '#000000'),
 			eqGlowIntensity: options.eqGlowIntensity,
 			eqLineHeightMultiplier: options.eqLineHeightMultiplier,
 			eqSegmentWidth: options.eqSegmentWidth,
-			scopeColor: this.hexStringToFloats(options.scopeColor),
-			waterColor: this.hexStringToFloats(options.waterColor),
+			scopeColor: this.hexStringToFloats(options.scopeColor || '#000000'),
+			waterColor: this.hexStringToFloats(options.waterColor || '#000000'),
 			discoTeqEnabled: options.discoteqEnabled,
 			eqEnabled: options.eqEnabled,
 			scopeEnabled: options.scopeEnabled,

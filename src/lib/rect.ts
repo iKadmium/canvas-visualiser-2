@@ -18,13 +18,11 @@ export function getRect(context: CanvasRenderingContext2D, text: string, x: numb
 }
 
 export function coverRect(original: Rect, target: Rect): Rect {
-	const originalAspectRatio = original.w / original.h;
-	const targetAspectRatio = target.w / target.h;
-
 	let height: number, width: number, rect: Rect;
-	if (originalAspectRatio > targetAspectRatio) {
+	if (target.w < target.h) {
+		//portrait
 		height = target.h;
-		width = (height / original.h) * original.w;
+		width = (original.w / original.h) * target.h;
 		rect = {
 			x: target.x - (width - target.w) / 2,
 			y: target.y,
@@ -32,8 +30,9 @@ export function coverRect(original: Rect, target: Rect): Rect {
 			h: height
 		};
 	} else {
+		//landscape
 		width = target.w;
-		height = (width / original.w) * original.h;
+		height = (original.h / original.w) * target.w;
 		rect = {
 			x: target.x,
 			y: target.y - (height - target.h) / 2,
