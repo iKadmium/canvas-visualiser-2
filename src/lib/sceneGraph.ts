@@ -5,6 +5,7 @@ import type { IExporter } from './exporter';
 import { Renderer2d } from './renderers/renderer2d';
 import { RendererWebGpu } from './renderers/rendererWebGpu';
 import { BackgroundRenderer } from './renderers/backgroundRenderer';
+import { LyricsRenderer } from './renderers/lyricsRenderer';
 
 export interface RendererOptions {
 	artist: string;
@@ -27,7 +28,7 @@ export interface RendererOptions {
 	lowerThirdOpacity: number;
 	playheadStrokeStyle: string | CanvasGradient | CanvasPattern;
 	playheadLineWidth: number;
-	textFillStyle: string | CanvasGradient | CanvasPattern;
+	textFillStyle: string;
 	font: string;
 	imageSmoothing: boolean;
 
@@ -35,6 +36,9 @@ export interface RendererOptions {
 	scopeEnabled: boolean;
 	wetEnabled: boolean;
 	discoteqEnabled: boolean;
+
+	lyricsFadeOutTime: number;
+	lyricsFadeInTime: number;
 }
 
 export class SceneGraph {
@@ -47,6 +51,7 @@ export class SceneGraph {
 	private renderer2d: Renderer2d;
 	private renderer3d: RendererWebGpu;
 	private backgroundRenderer: BackgroundRenderer;
+	private lyricsRenderer: LyricsRenderer;
 	private canvas: HTMLCanvasElement;
 	private options: RendererOptions;
 	private exporter: IExporter;
@@ -64,6 +69,7 @@ export class SceneGraph {
 		this.renderer2d = new Renderer2d(frameRate, options);
 		this.renderer3d = new RendererWebGpu(frameRate, options);
 		this.backgroundRenderer = new BackgroundRenderer(options);
+		this.lyricsRenderer = new LyricsRenderer(options);
 		this.exporter = new EncoderExporter();
 	}
 
@@ -84,10 +90,12 @@ export class SceneGraph {
 
 			this.renderer3d.render(this.currentFrame, fft, channelData);
 			this.renderer2d.render(this.currentFrame, this.totalFrames);
+			this.lyricsRenderer.render(this.currentFrame, this.frameRate);
 
 			this.backgroundRenderer.draw(context);
 			this.renderer3d.draw(context);
 			this.renderer2d.draw(context);
+			this.lyricsRenderer.draw(context);
 		}
 	}
 
@@ -134,6 +142,10 @@ export class SceneGraph {
 		this.playHead.max = this.totalFrames.toString();
 	}
 
+	public async loadLyrics(file: File) {
+		await this.lyricsRenderer.load(file);
+	}
+
 	public async init() {
 		await this.renderer3d.init();
 	}
@@ -142,5 +154,6 @@ export class SceneGraph {
 		this.backgroundRenderer.setOptions(options);
 		this.renderer2d.setOptions(options);
 		await this.renderer3d.setOptions(options);
+		this.lyricsRenderer.setOptions(options);
 	}
 }

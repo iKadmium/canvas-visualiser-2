@@ -81,6 +81,14 @@
 			<label for="wet-enabled">Wet Enabled</label><input type="checkbox" bind:checked={options.wetEnabled} id="wet-enabled" />
 		</div>
 	</Tab>
+	<Tab id="lyrics">
+		<div class="options">
+			<label for="lyric-fade-in-time">Lyric Fade In Time</label>
+			<input type="number" bind:value={options.lyricsFadeInTime} min="1" max="30" id="lyric-fade-in-time" />
+			<label for="lyric-fade-out-time">Lyric Fade Out Time</label>
+			<input type="number" bind:value={options.lyricsFadeOutTime} min="1" max="30" id="lyric-fade-out-time" />
+		</div>
+	</Tab>
 </TabStrip>
 
 <style>

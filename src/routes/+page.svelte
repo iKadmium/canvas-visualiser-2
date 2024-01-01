@@ -7,6 +7,8 @@
 
 	const audioFile = writable<File | undefined>();
 	const imageFile = writable<File | undefined>();
+	const lyricsFile = writable<File | undefined>();
+
 	let options: RendererOptions = {
 		artist: 'Kadmium',
 		title: "Don't Pay the Ferryman",
@@ -35,7 +37,10 @@
 		eqEnabled: true,
 		scopeEnabled: false,
 		discoteqEnabled: false,
-		wetEnabled: false
+		wetEnabled: false,
+
+		lyricsFadeInTime: 3,
+		lyricsFadeOutTime: 3
 	};
 </script>
 
@@ -44,11 +49,12 @@
 <div class="file-selectors">
 	<FileSelector title="Audio Files" on:fileSelected={(event) => audioFile.set(event.detail)} />
 	<FileSelector title="Background" on:fileSelected={(event) => imageFile.set(event.detail)} />
+	<FileSelector title="Lyrics" on:fileSelected={(event) => lyricsFile.set(event.detail)} />
 </div>
 <Options bind:options />
 
 {#if audioFile}
-	<Preview {audioFile} {imageFile} {options} />
+	<Preview {audioFile} {imageFile} {options} {lyricsFile} />
 {/if}
 
 <style>

@@ -10,6 +10,7 @@
 	export let options: RendererOptions;
 	export let audioFile: Writable<File | undefined>;
 	export let imageFile: Writable<File | undefined>;
+	export let lyricsFile: Writable<File | undefined>;
 	let loading = false;
 	let frameRate = 60;
 	let currentFrame = 0;
@@ -28,6 +29,17 @@
 		} finally {
 			loading = false;
 			progress = undefined;
+		}
+	}
+
+	async function loadLyrics(file: File) {
+		loading = true;
+		try {
+			await sceneGraph.loadLyrics(file);
+		} catch (reason) {
+			console.error(reason);
+		} finally {
+			loading = false;
 		}
 	}
 
@@ -85,6 +97,13 @@
 				loadImage(image);
 			})
 		);
+		unsubscribers.push(
+			lyricsFile.subscribe((lyrics) => {
+				if (lyrics) {
+					loadLyrics(lyrics);
+				}
+			})
+		);
 		sceneGraph.draw();
 	});
 
@@ -96,8 +115,10 @@
 	});
 
 	afterUpdate(async () => {
-		await sceneGraph.setOptions(options);
-		sceneGraph.draw();
+		if (!loading) {
+			await sceneGraph.setOptions(options);
+			sceneGraph.draw();
+		}
 	});
 </script>
 
@@ -111,7 +132,7 @@
 <br />
 <canvas bind:this={canvas2d} width={options.width} height={options.height} />
 <br />
-<input type="range" style={`width: ${options.width}px`} on:input={handleSeek} on:change={handleSeek} bind:this={playHead} />
+<input type="range" style={`width: ${options.width}px`} on:input={handleSeek} max="10800" on:change={handleSeek} bind:this={playHead} />
 <br />
 <button on:click={handlePlayPause}>Play</button>
 <button on:click={handleRender}>Render</button>
